@@ -20,6 +20,7 @@ import { authenticateRealtime, setRealtime } from './services/realtime.js';
 import path from 'node:path';
 dotenv.config();
 const app = express();
+app.set('trust proxy', 1);
 const clientOrigin = process.env.CLIENT_URL || 'http://localhost:5173';
 app.use(cors({ origin: clientOrigin, credentials: true }));
 app.use(express.json({ limit: '2mb' }));
