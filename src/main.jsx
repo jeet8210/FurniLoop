@@ -347,6 +347,9 @@ function App() {
         setItems(listingResult.listings.map(fromListing));
         if (session?.user) {
           setUser(session.user);
+          if (session.user.role === "admin") {
+            await openAdmin();
+          }
           const [favorites, notificationResult] = await Promise.all([
             api("/auth/favorites").catch(() => ({ listings: [] })),
             api("/notifications").catch(() => ({
@@ -617,7 +620,10 @@ function App() {
       notice(
         `Welcome${authMode === "register" ? " to FurniLoop" : " back"}, ${result.user.name.split(" ")[0]}!`,
       );
-      if (authMode === "admin") await openAdmin();
+      if (result.user?.role === "admin" || authMode === "admin") {
+        setAdminSection("Overview");
+        await openAdmin();
+      }
     } catch (error) {
       if (error.code === "EMAIL_UNVERIFIED")
         setUnverifiedEmail(String(form.get("email") || ""));
@@ -889,7 +895,6 @@ function App() {
         analytics,
       });
       setAdminSection("Overview");
-      setModal("admin");
     } catch (error) {
       notice(error.message);
     }
@@ -1211,6 +1216,506 @@ function App() {
   };
 
   const submitSort = (value) => setSort(value);
+
+  if (user?.role === "admin") {
+    return (
+      <div className="admin-page"><div className="admin-dashboard">
+                  <aside className="admin-sidebar">
+                    <h2>FurniLoop</h2>
+                    <p>ADMIN PANEL</p>
+
+                    <nav>
+                      {[
+                        "Overview",
+                        "Analytics",
+                        "Listings",
+                        "Reports",
+                        "Users",
+                        "Reviews",
+                        "Categories",
+                      ].map((section) => (
+                        <button
+                          key={section}
+                          className={adminSection === section ? "active" : ""}
+                          onClick={() => {
+                            setAdminSection(section);
+
+                            const sectionIds = {
+                              Overview: "admin-overview",
+                              Analytics: "admin-analytics",
+                              Listings: "admin-listings",
+                              Reports: "admin-reports",
+                              Users: "admin-users",
+                              Reviews: "admin-reviews",
+                              Categories: "admin-categories",
+                            };
+
+                            document
+                              .getElementById(sectionIds[section])
+                              ?.scrollIntoView({
+                                behavior: "smooth",
+                                block: "start",
+                              });
+                          }}
+                        >
+                          {section}
+                        </button>
+                      ))}
+                    </nav>
+
+                    <button onClick={handleLogout}>Sign out</button>
+                  </aside>
+
+                  <main className="admin-main">
+                    <header className="admin-topbar">
+                      <div>
+                        <h2>Admin Dashboard</h2>
+                        <p>Manage your FurniLoop marketplace</p>
+                      </div>
+                    </header>
+
+                    <div className="admin-content">
+                      <div className="eyebrow dark">
+                        <span></span> MARKETPLACE ADMIN
+                      </div>
+                      <h2>FurniLoop overview</h2>
+                      <p className="modal-intro">
+                        Review listings and member reports, and manage account
+                        access.
+                      </p>
+                      <div className="admin-stats" id="admin-overview">
+                        {[
+                          ["Members", adminData.summary.users],
+                          ["Live listings", adminData.summary.activeListings],
+                          ["Open reports", adminData.summary.openReports],
+                          ["Pending offers", adminData.summary.pendingOffers],
+                        ].map(([label, value]) => (
+                          <div key={label}>
+                            <strong>{value ?? "—"}</strong>
+                            <small>{label}</small>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="admin-analytics" id="admin-analytics">
+                        <h3>Business Analytics</h3>
+
+                        <div className="analytics-grid">
+                          <div className="analytics-card">
+                            <h3>Monthly Completed Transaction Value (₹)</h3>
+                            <ResponsiveContainer width="100%" height={260}>
+                              <AreaChart
+                                data={adminData.analytics?.monthly || []}
+                              >
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="month" />
+                                <YAxis />
+                                <Tooltip />
+                                <Area
+                                  type="monotone"
+                                  dataKey="revenue"
+                                  stroke="#16a085"
+                                  fill="#16a085"
+                                  fillOpacity={0.2}
+                                />
+                              </AreaChart>
+                            </ResponsiveContainer>
+                          </div>
+
+                          <div className="analytics-card">
+                            <h3>User Registration Growth</h3>
+                            <ResponsiveContainer width="100%" height={260}>
+                              <LineChart
+                                data={adminData.analytics?.monthly || []}
+                              >
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="month" />
+                                <YAxis allowDecimals={false} />
+                                <Tooltip />
+                                <Line
+                                  type="monotone"
+                                  dataKey="registrations"
+                                  stroke="#3867d6"
+                                  strokeWidth={3}
+                                />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+
+                          <div className="analytics-card">
+                            <h3>Monthly Orders & Sales</h3>
+                            <ResponsiveContainer width="100%" height={260}>
+                              <BarChart
+                                data={adminData.analytics?.monthly || []}
+                              >
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis dataKey="month" />
+                                <YAxis allowDecimals={false} />
+                                <Tooltip />
+                                <Legend />
+                                <Bar
+                                  dataKey="orders"
+                                  name="Orders"
+                                  fill="#3867d6"
+                                />
+                                <Bar
+                                  dataKey="sales"
+                                  name="Completed Sales"
+                                  fill="#16a085"
+                                />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+
+                          <div className="analytics-card">
+                            <h3>Revenue by Furniture Category</h3>
+                            <ResponsiveContainer width="100%" height={260}>
+                              <BarChart
+                                data={
+                                  adminData.analytics?.categoryRevenue || []
+                                }
+                                layout="vertical"
+                              >
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis type="number" />
+                                <YAxis
+                                  type="category"
+                                  dataKey="_id"
+                                  width={90}
+                                />
+                                <Tooltip />
+                                <Bar dataKey="revenue" fill="#e67e22" />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+
+                        <div className="analytics-card">
+                          <h3>Top 5 Best-Selling Products</h3>
+                          {(adminData.analytics?.bestSelling || []).map(
+                            (product) => (
+                              <div
+                                className="analytics-product-row"
+                                key={product._id}
+                              >
+                                <div>
+                                  <strong>{product.title}</strong>
+                                  <small>
+                                    {product.category} · {product.sales} sales
+                                  </small>
+                                </div>
+                                <strong>
+                                  ₹
+                                  {Number(product.revenue || 0).toLocaleString(
+                                    "en-IN",
+                                  )}
+                                </strong>
+                              </div>
+                            ),
+                          )}
+
+                          {(!adminData.analytics?.bestSelling ||
+                            adminData.analytics.bestSelling.length === 0) && (
+                            <p className="section-sub">
+                              No completed sales yet.
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="analytics-card">
+                          <h3>Order Status Breakdown</h3>
+                          {Object.entries(
+                            adminData.analytics?.transactionStatuses || {},
+                          ).map(([status, count]) => (
+                            <div className="analytics-product-row" key={status}>
+                              <strong>{status}</strong>
+                              <strong>{count}</strong>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="analytics-card">
+                          <h3>Recent Orders</h3>
+                          {(adminData.analytics?.recentOrders || []).map(
+                            (order) => (
+                              <div
+                                className="analytics-product-row"
+                                key={order._id}
+                              >
+                                <div>
+                                  <strong>
+                                    {order.listing?.title || "Furniture"}
+                                  </strong>
+                                  <small>
+                                    Buyer: {order.buyer?.name || "Unknown"} ·
+                                    Seller: {order.seller?.name || "Unknown"}
+                                  </small>
+                                  <small>
+                                    {new Date(
+                                      order.createdAt,
+                                    ).toLocaleDateString("en-IN")}
+                                  </small>
+                                </div>
+                                <div>
+                                  <strong>
+                                    ₹
+                                    {Number(
+                                      order.agreedPrice || 0,
+                                    ).toLocaleString("en-IN")}
+                                  </strong>
+                                  <small>{order.status}</small>
+                                </div>
+                              </div>
+                            ),
+                          )}
+
+                          {(!adminData.analytics?.recentOrders ||
+                            adminData.analytics.recentOrders.length === 0) && (
+                            <p className="section-sub">
+                              No orders available yet.
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* LISTING REVIEW */}
+                      <div
+                        className="my-listings saved-listings"
+                        id="admin-listings"
+                      >
+                        <h3>Listing review</h3>
+
+                        {adminData.listings.slice(0, 30).map((listing) => (
+                          <div className="admin-row" key={listing._id}>
+                            <img src={imageUrl(listing.images?.[0])} alt="" />
+
+                            <div>
+                              <strong>{listing.title}</strong>
+                              <small>
+                                {listing.seller?.name} · {listing.status}
+                              </small>
+                            </div>
+
+                            <select
+                              value={listing.status}
+                              onChange={(event) =>
+                                updateAdminRecord(
+                                  `/admin/listings/${listing._id}`,
+                                  event.target.value,
+                                  "listing",
+                                )
+                              }
+                            >
+                              <option value="ACTIVE">Live</option>
+                              <option value="SOLD">Sold</option>
+                              <option value="REJECTED">Reject</option>
+                              <option value="INACTIVE">Pause</option>
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* REPORTED LISTINGS */}
+                      <div
+                        className="my-listings saved-listings"
+                        id="admin-reports"
+                      >
+                        <h3>Reported listings</h3>
+
+                        {adminData.reports.map((report) => (
+                          <div className="admin-report" key={report._id}>
+                            <strong>
+                              {report.listing?.title || "Listing removed"} ·{" "}
+                              {report.reason}
+                            </strong>
+
+                            <small>
+                              Reported by {report.reporter?.name} ·{" "}
+                              {report.status}
+                            </small>
+
+                            {report.details && <p>{report.details}</p>}
+
+                            {report.status === "OPEN" && (
+                              <div>
+                                <button
+                                  onClick={() =>
+                                    updateAdminRecord(
+                                      `/admin/reports/${report._id}`,
+                                      "REVIEWED",
+                                      "report",
+                                    )
+                                  }
+                                >
+                                  Mark reviewed
+                                </button>
+
+                                <button
+                                  onClick={() =>
+                                    updateAdminRecord(
+                                      `/admin/reports/${report._id}`,
+                                      "DISMISSED",
+                                      "report",
+                                    )
+                                  }
+                                >
+                                  Dismiss
+                                </button>
+
+                                <button
+                                  onClick={() =>
+                                    report.listing?._id &&
+                                    updateAdminRecord(
+                                      `/admin/listings/${report.listing._id}`,
+                                      "INACTIVE",
+                                      "listing",
+                                    )
+                                  }
+                                >
+                                  Pause listing
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* MEMBER ACCOUNTS */}
+                      <div
+                        className="my-listings saved-listings"
+                        id="admin-users"
+                      >
+                        <h3>Member accounts</h3>
+
+                        {adminData.users.slice(0, 30).map((member) => (
+                          <div className="admin-row" key={member._id}>
+                            <div className="admin-user-avatar">
+                              {member.name?.[0]}
+                            </div>
+
+                            <div>
+                              <strong>{member.name}</strong>
+                              <small>
+                                {member.email} · {member.role} · {member.status}
+                              </small>
+                            </div>
+
+                            <button
+                              className="small-action"
+                              onClick={() =>
+                                updateAdminRecord(
+                                  `/admin/users/${member._id}`,
+                                  member.status === "ACTIVE"
+                                    ? "BLOCKED"
+                                    : "ACTIVE",
+                                  "user",
+                                )
+                              }
+                            >
+                              {member.status === "ACTIVE" ? "Block" : "Unblock"}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* REVIEWS */}
+                      <div
+                        className="my-listings saved-listings"
+                        id="admin-reviews"
+                      >
+                        <h3>Reviews</h3>
+
+                        {adminData.reviews.map((review) => (
+                          <div className="admin-row" key={review._id}>
+                            <div>
+                              <strong>
+                                {"★".repeat(review.rating)}
+                                {"☆".repeat(5 - review.rating)} ·{" "}
+                                {review.reviewer?.name} →{" "}
+                                {review.recipient?.name}
+                              </strong>
+
+                              <small>
+                                {review.comment || "No comment"} ·{" "}
+                                {review.status}
+                              </small>
+                            </div>
+
+                            <button
+                              className="small-action"
+                              onClick={() =>
+                                updateAdminRecord(
+                                  `/admin/reviews/${review._id}`,
+                                  review.status === "VISIBLE"
+                                    ? "HIDDEN"
+                                    : "VISIBLE",
+                                  "review",
+                                )
+                              }
+                            >
+                              {review.status === "VISIBLE" ? "Hide" : "Show"}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* CATEGORIES */}
+                      <div
+                        className="my-listings saved-listings"
+                        id="admin-categories"
+                      >
+                        <h3>Categories</h3>
+
+                        <form className="category-form" onSubmit={saveCategory}>
+                          <input
+                            name="name"
+                            placeholder="New category"
+                            maxLength="40"
+                            required
+                          />
+
+                          <input name="icon" placeholder="Icon" maxLength="8" />
+
+                          <button className="outline-btn">Add</button>
+                        </form>
+
+                        {adminData.categories.map((item) => (
+                          <div className="admin-row" key={item._id}>
+                            <span className="cat-icon">{item.icon}</span>
+
+                            <div>
+                              <strong>{item.name}</strong>
+                              <small>
+                                {item.active
+                                  ? "Visible in marketplace"
+                                  : "Hidden"}
+                              </small>
+                            </div>
+
+                            <button
+                              className="small-action"
+                              onClick={() =>
+                                updateCategory(item, { active: !item.active })
+                              }
+                            >
+                              {item.active ? "Hide" : "Show"}
+                            </button>
+
+                            <button
+                              className="small-action danger-action"
+                              onClick={() => removeCategory(item)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </main>
+                </div>
+                </div>
+    );
+  }
 
   return (
     <>
@@ -2636,502 +3141,7 @@ function App() {
               })()}
             {modal === "admin" && (
               <>
-                <div className="admin-dashboard">
-                  <aside className="admin-sidebar">
-                    <h2>FurniLoop</h2>
-                    <p>ADMIN PANEL</p>
-
-                    <nav>
-                      {[
-                        "Overview",
-                        "Analytics",
-                        "Listings",
-                        "Reports",
-                        "Users",
-                        "Reviews",
-                        "Categories",
-                      ].map((section) => (
-                        <button
-                          key={section}
-                          className={adminSection === section ? "active" : ""}
-                          onClick={() => {
-                            setAdminSection(section);
-
-                            const sectionIds = {
-                              Overview: "admin-overview",
-                              Analytics: "admin-analytics",
-                              Listings: "admin-listings",
-                              Reports: "admin-reports",
-                              Users: "admin-users",
-                              Reviews: "admin-reviews",
-                              Categories: "admin-categories",
-                            };
-
-                            document
-                              .getElementById(sectionIds[section])
-                              ?.scrollIntoView({
-                                behavior: "smooth",
-                                block: "start",
-                              });
-                          }}
-                        >
-                          {section}
-                        </button>
-                      ))}
-                    </nav>
-
-                    <button onClick={() => setModal("")}>
-                      Back to Marketplace
-                    </button>
-                  </aside>
-
-                  <main className="admin-main">
-                    <header className="admin-topbar">
-                      <div>
-                        <h2>Admin Dashboard</h2>
-                        <p>Manage your FurniLoop marketplace</p>
-                      </div>
-                    </header>
-
-                    <div className="admin-content">
-                      <div className="eyebrow dark">
-                        <span></span> MARKETPLACE ADMIN
-                      </div>
-                      <h2>FurniLoop overview</h2>
-                      <p className="modal-intro">
-                        Review listings and member reports, and manage account
-                        access.
-                      </p>
-                      <div className="admin-stats" id="admin-overview">
-                        {[
-                          ["Members", adminData.summary.users],
-                          ["Live listings", adminData.summary.activeListings],
-                          ["Open reports", adminData.summary.openReports],
-                          ["Pending offers", adminData.summary.pendingOffers],
-                        ].map(([label, value]) => (
-                          <div key={label}>
-                            <strong>{value ?? "—"}</strong>
-                            <small>{label}</small>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="admin-analytics" id="admin-analytics">
-                        <h3>Business Analytics</h3>
-
-                        <div className="analytics-grid">
-                          <div className="analytics-card">
-                            <h3>Monthly Completed Transaction Value (₹)</h3>
-                            <ResponsiveContainer width="100%" height={260}>
-                              <AreaChart
-                                data={adminData.analytics?.monthly || []}
-                              >
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="month" />
-                                <YAxis />
-                                <Tooltip />
-                                <Area
-                                  type="monotone"
-                                  dataKey="revenue"
-                                  stroke="#16a085"
-                                  fill="#16a085"
-                                  fillOpacity={0.2}
-                                />
-                              </AreaChart>
-                            </ResponsiveContainer>
-                          </div>
-
-                          <div className="analytics-card">
-                            <h3>User Registration Growth</h3>
-                            <ResponsiveContainer width="100%" height={260}>
-                              <LineChart
-                                data={adminData.analytics?.monthly || []}
-                              >
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="month" />
-                                <YAxis allowDecimals={false} />
-                                <Tooltip />
-                                <Line
-                                  type="monotone"
-                                  dataKey="registrations"
-                                  stroke="#3867d6"
-                                  strokeWidth={3}
-                                />
-                              </LineChart>
-                            </ResponsiveContainer>
-                          </div>
-
-                          <div className="analytics-card">
-                            <h3>Monthly Orders & Sales</h3>
-                            <ResponsiveContainer width="100%" height={260}>
-                              <BarChart
-                                data={adminData.analytics?.monthly || []}
-                              >
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis dataKey="month" />
-                                <YAxis allowDecimals={false} />
-                                <Tooltip />
-                                <Legend />
-                                <Bar
-                                  dataKey="orders"
-                                  name="Orders"
-                                  fill="#3867d6"
-                                />
-                                <Bar
-                                  dataKey="sales"
-                                  name="Completed Sales"
-                                  fill="#16a085"
-                                />
-                              </BarChart>
-                            </ResponsiveContainer>
-                          </div>
-
-                          <div className="analytics-card">
-                            <h3>Revenue by Furniture Category</h3>
-                            <ResponsiveContainer width="100%" height={260}>
-                              <BarChart
-                                data={
-                                  adminData.analytics?.categoryRevenue || []
-                                }
-                                layout="vertical"
-                              >
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis type="number" />
-                                <YAxis
-                                  type="category"
-                                  dataKey="_id"
-                                  width={90}
-                                />
-                                <Tooltip />
-                                <Bar dataKey="revenue" fill="#e67e22" />
-                              </BarChart>
-                            </ResponsiveContainer>
-                          </div>
-                        </div>
-
-                        <div className="analytics-card">
-                          <h3>Top 5 Best-Selling Products</h3>
-                          {(adminData.analytics?.bestSelling || []).map(
-                            (product) => (
-                              <div
-                                className="analytics-product-row"
-                                key={product._id}
-                              >
-                                <div>
-                                  <strong>{product.title}</strong>
-                                  <small>
-                                    {product.category} · {product.sales} sales
-                                  </small>
-                                </div>
-                                <strong>
-                                  ₹
-                                  {Number(product.revenue || 0).toLocaleString(
-                                    "en-IN",
-                                  )}
-                                </strong>
-                              </div>
-                            ),
-                          )}
-
-                          {(!adminData.analytics?.bestSelling ||
-                            adminData.analytics.bestSelling.length === 0) && (
-                            <p className="section-sub">
-                              No completed sales yet.
-                            </p>
-                          )}
-                        </div>
-
-                        <div className="analytics-card">
-                          <h3>Order Status Breakdown</h3>
-                          {Object.entries(
-                            adminData.analytics?.transactionStatuses || {},
-                          ).map(([status, count]) => (
-                            <div className="analytics-product-row" key={status}>
-                              <strong>{status}</strong>
-                              <strong>{count}</strong>
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="analytics-card">
-                          <h3>Recent Orders</h3>
-                          {(adminData.analytics?.recentOrders || []).map(
-                            (order) => (
-                              <div
-                                className="analytics-product-row"
-                                key={order._id}
-                              >
-                                <div>
-                                  <strong>
-                                    {order.listing?.title || "Furniture"}
-                                  </strong>
-                                  <small>
-                                    Buyer: {order.buyer?.name || "Unknown"} ·
-                                    Seller: {order.seller?.name || "Unknown"}
-                                  </small>
-                                  <small>
-                                    {new Date(
-                                      order.createdAt,
-                                    ).toLocaleDateString("en-IN")}
-                                  </small>
-                                </div>
-                                <div>
-                                  <strong>
-                                    ₹
-                                    {Number(
-                                      order.agreedPrice || 0,
-                                    ).toLocaleString("en-IN")}
-                                  </strong>
-                                  <small>{order.status}</small>
-                                </div>
-                              </div>
-                            ),
-                          )}
-
-                          {(!adminData.analytics?.recentOrders ||
-                            adminData.analytics.recentOrders.length === 0) && (
-                            <p className="section-sub">
-                              No orders available yet.
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* LISTING REVIEW */}
-                      <div
-                        className="my-listings saved-listings"
-                        id="admin-listings"
-                      >
-                        <h3>Listing review</h3>
-
-                        {adminData.listings.slice(0, 30).map((listing) => (
-                          <div className="admin-row" key={listing._id}>
-                            <img src={imageUrl(listing.images?.[0])} alt="" />
-
-                            <div>
-                              <strong>{listing.title}</strong>
-                              <small>
-                                {listing.seller?.name} · {listing.status}
-                              </small>
-                            </div>
-
-                            <select
-                              value={listing.status}
-                              onChange={(event) =>
-                                updateAdminRecord(
-                                  `/admin/listings/${listing._id}`,
-                                  event.target.value,
-                                  "listing",
-                                )
-                              }
-                            >
-                              <option value="ACTIVE">Live</option>
-                              <option value="SOLD">Sold</option>
-                              <option value="REJECTED">Reject</option>
-                              <option value="INACTIVE">Pause</option>
-                            </select>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* REPORTED LISTINGS */}
-                      <div
-                        className="my-listings saved-listings"
-                        id="admin-reports"
-                      >
-                        <h3>Reported listings</h3>
-
-                        {adminData.reports.map((report) => (
-                          <div className="admin-report" key={report._id}>
-                            <strong>
-                              {report.listing?.title || "Listing removed"} ·{" "}
-                              {report.reason}
-                            </strong>
-
-                            <small>
-                              Reported by {report.reporter?.name} ·{" "}
-                              {report.status}
-                            </small>
-
-                            {report.details && <p>{report.details}</p>}
-
-                            {report.status === "OPEN" && (
-                              <div>
-                                <button
-                                  onClick={() =>
-                                    updateAdminRecord(
-                                      `/admin/reports/${report._id}`,
-                                      "REVIEWED",
-                                      "report",
-                                    )
-                                  }
-                                >
-                                  Mark reviewed
-                                </button>
-
-                                <button
-                                  onClick={() =>
-                                    updateAdminRecord(
-                                      `/admin/reports/${report._id}`,
-                                      "DISMISSED",
-                                      "report",
-                                    )
-                                  }
-                                >
-                                  Dismiss
-                                </button>
-
-                                <button
-                                  onClick={() =>
-                                    report.listing?._id &&
-                                    updateAdminRecord(
-                                      `/admin/listings/${report.listing._id}`,
-                                      "INACTIVE",
-                                      "listing",
-                                    )
-                                  }
-                                >
-                                  Pause listing
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* MEMBER ACCOUNTS */}
-                      <div
-                        className="my-listings saved-listings"
-                        id="admin-users"
-                      >
-                        <h3>Member accounts</h3>
-
-                        {adminData.users.slice(0, 30).map((member) => (
-                          <div className="admin-row" key={member._id}>
-                            <div className="admin-user-avatar">
-                              {member.name?.[0]}
-                            </div>
-
-                            <div>
-                              <strong>{member.name}</strong>
-                              <small>
-                                {member.email} · {member.role} · {member.status}
-                              </small>
-                            </div>
-
-                            <button
-                              className="small-action"
-                              onClick={() =>
-                                updateAdminRecord(
-                                  `/admin/users/${member._id}`,
-                                  member.status === "ACTIVE"
-                                    ? "BLOCKED"
-                                    : "ACTIVE",
-                                  "user",
-                                )
-                              }
-                            >
-                              {member.status === "ACTIVE" ? "Block" : "Unblock"}
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* REVIEWS */}
-                      <div
-                        className="my-listings saved-listings"
-                        id="admin-reviews"
-                      >
-                        <h3>Reviews</h3>
-
-                        {adminData.reviews.map((review) => (
-                          <div className="admin-row" key={review._id}>
-                            <div>
-                              <strong>
-                                {"★".repeat(review.rating)}
-                                {"☆".repeat(5 - review.rating)} ·{" "}
-                                {review.reviewer?.name} →{" "}
-                                {review.recipient?.name}
-                              </strong>
-
-                              <small>
-                                {review.comment || "No comment"} ·{" "}
-                                {review.status}
-                              </small>
-                            </div>
-
-                            <button
-                              className="small-action"
-                              onClick={() =>
-                                updateAdminRecord(
-                                  `/admin/reviews/${review._id}`,
-                                  review.status === "VISIBLE"
-                                    ? "HIDDEN"
-                                    : "VISIBLE",
-                                  "review",
-                                )
-                              }
-                            >
-                              {review.status === "VISIBLE" ? "Hide" : "Show"}
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* CATEGORIES */}
-                      <div
-                        className="my-listings saved-listings"
-                        id="admin-categories"
-                      >
-                        <h3>Categories</h3>
-
-                        <form className="category-form" onSubmit={saveCategory}>
-                          <input
-                            name="name"
-                            placeholder="New category"
-                            maxLength="40"
-                            required
-                          />
-
-                          <input name="icon" placeholder="Icon" maxLength="8" />
-
-                          <button className="outline-btn">Add</button>
-                        </form>
-
-                        {adminData.categories.map((item) => (
-                          <div className="admin-row" key={item._id}>
-                            <span className="cat-icon">{item.icon}</span>
-
-                            <div>
-                              <strong>{item.name}</strong>
-                              <small>
-                                {item.active
-                                  ? "Visible in marketplace"
-                                  : "Hidden"}
-                              </small>
-                            </div>
-
-                            <button
-                              className="small-action"
-                              onClick={() =>
-                                updateCategory(item, { active: !item.active })
-                              }
-                            >
-                              {item.active ? "Hide" : "Show"}
-                            </button>
-
-                            <button
-                              className="small-action danger-action"
-                              onClick={() => removeCategory(item)}
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </main>
-                </div>
+                
               </>
             )}
           </div>
