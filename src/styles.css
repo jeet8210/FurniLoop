@@ -1053,6 +1053,24 @@ footer {
     box-shadow: 0 15px 80px #13231b55
 }
 
+/* Full-screen Admin Dashboard */
+.admin-backdrop {
+    padding: 0;
+    align-items: stretch;
+    justify-content: stretch;
+}
+
+.admin-fullscreen {
+    width: 100%;
+    max-width: none;
+    height: 100vh;
+    max-height: 100vh;
+    margin: 0;
+    border-radius: 0;
+    overflow-y: auto;
+    padding: 0;
+}
+
 .modal-close {
     position: absolute;
     right: 17px;
@@ -2588,35 +2606,197 @@ footer {
 
 /* Admin Analytics Product Rows */
 .analytics-product-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  padding: 13px 0;
-  border-bottom: 1px solid #eeeeee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 13px 0;
+    border-bottom: 1px solid #eeeeee;
 }
 
 .analytics-product-row:last-child {
-  border-bottom: none;
+    border-bottom: none;
 }
 
-.analytics-product-row > div {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  min-width: 0;
+.analytics-product-row>div {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
 }
 
 .analytics-product-row strong {
-  font-size: 14px;
-  color: #222222;
+    font-size: 14px;
+    color: #222222;
 }
 
 .analytics-product-row small {
-  font-size: 12px;
-  color: #777777;
+    font-size: 12px;
+    color: #777777;
 }
 
 .analytics-card {
-  overflow: hidden;
+    overflow: hidden;
+}
+
+/* Admin Dashboard Layout */
+.admin-dashboard {
+  display: flex;
+  min-height: 100vh;
+  background: #f5f6f8;
+  color: #20252b;
+}
+
+.admin-sidebar {
+  width: 250px;
+  min-width: 250px;
+  background: #17212b;
+  color: white;
+  padding: 28px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-sidebar h2 {
+  margin: 0;
+  color: white;
+}
+
+.admin-sidebar p {
+  color: #aab4bf;
+  font-size: 11px;
+  letter-spacing: 2px;
+}
+
+.admin-sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-sidebar button {
+  padding: 12px 14px;
+  text-align: left;
+  background: transparent;
+  color: #dce3ea;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.admin-sidebar button.active,
+.admin-sidebar button:hover {
+  background: #16a085;
+  color: white;
+}
+
+.admin-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-topbar {
+  padding: 24px 32px;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.admin-topbar h2,
+.admin-topbar p {
+  margin: 0 0 6px;
+}
+
+.admin-content {
+  padding: 30px;
+}
+
+
+/* Admin Dashboard Responsive Improvements */
+
+/* Close button */
+.admin-fullscreen > .modal-close {
+  position: fixed;
+  top: 18px;
+  right: 22px;
+  z-index: 50;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f0f2e9;
+  color: #263b30;
+  display: grid;
+  place-items: center;
+}
+
+/* Tablet screens */
+@media (max-width: 900px) {
+  .admin-sidebar {
+    width: 210px;
+    min-width: 210px;
+    padding: 24px 12px;
+  }
+
+  .admin-content {
+    padding: 22px;
+  }
+
+  .admin-topbar {
+    padding: 22px;
+  }
+}
+
+/* Mobile screens */
+@media (max-width: 600px) {
+  .admin-dashboard {
+    flex-direction: column;
+  }
+
+  .admin-sidebar {
+    width: 100%;
+    min-width: 0;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .admin-sidebar nav {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+
+  .admin-sidebar nav button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    padding: 10px 13px;
+  }
+
+  .admin-sidebar > button {
+    width: fit-content;
+  }
+
+  .admin-topbar {
+    padding: 20px 16px;
+  }
+
+  .admin-content {
+    padding: 16px;
+  }
+
+  .admin-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .analytics-card {
+    padding: 14px;
+  }
+
+  .admin-fullscreen > .modal-close {
+    top: 12px;
+    right: 12px;
+  }
 }
