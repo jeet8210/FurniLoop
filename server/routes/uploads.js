@@ -59,14 +59,12 @@ router.post(
   (req, res, next) =>
     receiveImages.array("images", 8)(req, res, (error) => {
       if (error)
-        return res
-          .status(400)
-          .json({
-            message:
-              error.code === "LIMIT_FILE_SIZE"
-                ? "Each photo must be 5 MB or smaller."
-                : error.message,
-          });
+        return res.status(400).json({
+          message:
+            error.code === "LIMIT_FILE_SIZE"
+              ? "Each photo must be 5 MB or smaller."
+              : error.message,
+        });
       next();
     }),
   async (req, res) => {
@@ -74,12 +72,10 @@ router.post(
       if (!req.files?.length)
         return res.status(400).json({ message: "Choose at least one photo." });
       if (process.env.NODE_ENV === "production" && !cloudinaryReady())
-        return res
-          .status(503)
-          .json({
-            message:
-              "Configure Cloudinary before accepting production photo uploads.",
-          });
+        return res.status(503).json({
+          message:
+            "Configure Cloudinary before accepting production photo uploads.",
+        });
       let images;
       if (cloudinaryReady()) {
         images = await Promise.all(req.files.map(uploadToCloudinary));
@@ -108,10 +104,12 @@ router.post(
         .status(201)
         .json({ images, storage: cloudinaryReady() ? "cloudinary" : "local" });
     } catch (error) {
-      console.error("Cloudinary upload error:", {
+      console.error("Cloudinary upload error details:", {
         message: error.message,
         http_code: error.http_code,
         name: error.name,
+        error: error.error,
+        response: error.response?.body,
       });
 
       res.status(502).json({
