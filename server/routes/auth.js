@@ -46,12 +46,10 @@ function issueSession(user, res) {
 router.post("/register", authLimiter, async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
-      return res
-        .status(503)
-        .json({
-          message:
-            "Accounts are temporarily unavailable because the database is not connected. Configure MONGODB_URI and restart the API.",
-        });
+      return res.status(503).json({
+        message:
+          "Accounts are temporarily unavailable because the database is not connected. Configure MONGODB_URI and restart the API.",
+      });
     }
     const name = String(req.body.name || "").trim();
     const email = String(req.body.email || "")
@@ -94,11 +92,9 @@ router.post("/register", authLimiter, async (req, res) => {
       tokenName: "verify",
       token,
     });
-    res
-      .status(201)
-      .json({
-        message: "Account created. Check your email for a verification link.",
-      });
+    res.status(201).json({
+      message: "Account created. Check your email for a verification link.",
+    });
   } catch (error) {
     if (error.code === 11000)
       return res
@@ -125,13 +121,16 @@ router.post("/login", authLimiter, async (req, res) => {
       return res
         .status(401)
         .json({ message: "Email or password is incorrect." });
+    if (user.role === "admin") {
+      return res.status(403).json({
+        message: "Please use Administrator Login to access this account.",
+      });
+    }
     if (!user.emailVerified)
-      return res
-        .status(403)
-        .json({
-          message: "Verify your email before signing in.",
-          code: "EMAIL_UNVERIFIED",
-        });
+      return res.status(403).json({
+        message: "Verify your email before signing in.",
+        code: "EMAIL_UNVERIFIED",
+      });
     res.json({ user: issueSession(user, res) });
   } catch {
     res.status(500).json({ message: "Could not sign you in." });
@@ -161,12 +160,10 @@ router.post("/admin-login", authLimiter, async (req, res) => {
         .status(403)
         .json({ message: "This administrator account is disabled." });
     if (!user.emailVerified)
-      return res
-        .status(403)
-        .json({
-          message: "Verify this email before signing in.",
-          code: "EMAIL_UNVERIFIED",
-        });
+      return res.status(403).json({
+        message: "Verify this email before signing in.",
+        code: "EMAIL_UNVERIFIED",
+      });
     res.json({ user: issueSession(user, res) });
   } catch {
     res.status(500).json({ message: "Could not sign in to the admin panel." });
