@@ -20,6 +20,25 @@ import {
   FiPackage,
   FiBell,
 } from "react-icons/fi";
+
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from "recharts";
+
 import "./styles.css";
 
 const demoItems = [
@@ -489,7 +508,7 @@ function App() {
   const startSell = (listing = null) => {
     setFormError("");
     setEditing(listing);
-    setUploadedImages(listing?.images || []); 
+    setUploadedImages(listing?.images || []);
     setPhotoUrl("");
 
     if (apiReady && !user) {
@@ -842,15 +861,23 @@ function App() {
 
   const openAdmin = async () => {
     try {
-      const [summary, listings, users, reports, categoryResult, reviewResult] =
-        await Promise.all([
-          api("/admin/summary"),
-          api("/admin/listings"),
-          api("/admin/users"),
-          api("/admin/reports"),
-          api("/categories/manage"),
-          api("/admin/reviews"),
-        ]);
+      const [
+        summary,
+        listings,
+        users,
+        reports,
+        categoryResult,
+        reviewResult,
+        analytics,
+      ] = await Promise.all([
+        api("/admin/summary"),
+        api("/admin/listings"),
+        api("/admin/users"),
+        api("/admin/reports"),
+        api("/categories/manage"),
+        api("/admin/reviews"),
+        api("/admin/analytics"),
+      ]);
       setAdminData({
         summary,
         listings: listings.listings,
@@ -858,6 +885,7 @@ function App() {
         reports: reports.reports,
         categories: categoryResult.categories,
         reviews: reviewResult.reviews,
+        analytics,
       });
       setModal("admin");
     } catch (error) {
@@ -2623,6 +2651,85 @@ function App() {
                     </div>
                   ))}
                 </div>
+
+                <div className="admin-analytics">
+                  <h3>Business Analytics</h3>
+
+                  <div className="analytics-grid">
+                    <div className="analytics-card">
+                      <h3>Monthly Revenue (₹)</h3>
+                      <ResponsiveContainer width="100%" height={260}>
+                        <AreaChart data={adminData.analytics?.monthly || []}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="month" />
+                          <YAxis />
+                          <Tooltip />
+                          <Area
+                            type="monotone"
+                            dataKey="revenue"
+                            stroke="#16a085"
+                            fill="#16a085"
+                            fillOpacity={0.2}
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="analytics-card">
+                      <h3>User Registration Growth</h3>
+                      <ResponsiveContainer width="100%" height={260}>
+                        <LineChart data={adminData.analytics?.monthly || []}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="month" />
+                          <YAxis allowDecimals={false} />
+                          <Tooltip />
+                          <Line
+                            type="monotone"
+                            dataKey="registrations"
+                            stroke="#3867d6"
+                            strokeWidth={3}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="analytics-card">
+                      <h3>Monthly Orders & Sales</h3>
+                      <ResponsiveContainer width="100%" height={260}>
+                        <BarChart data={adminData.analytics?.monthly || []}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="month" />
+                          <YAxis allowDecimals={false} />
+                          <Tooltip />
+                          <Legend />
+                          <Bar dataKey="orders" name="Orders" fill="#3867d6" />
+                          <Bar
+                            dataKey="sales"
+                            name="Completed Sales"
+                            fill="#16a085"
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="analytics-card">
+                      <h3>Revenue by Furniture Category</h3>
+                      <ResponsiveContainer width="100%" height={260}>
+                        <BarChart
+                          data={adminData.analytics?.categoryRevenue || []}
+                          layout="vertical"
+                        >
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis type="number" />
+                          <YAxis type="category" dataKey="_id" width={90} />
+                          <Tooltip />
+                          <Bar dataKey="revenue" fill="#e67e22" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="my-listings saved-listings">
                   <h3>Listing review</h3>
                   {adminData.listings.slice(0, 30).map((listing) => (
