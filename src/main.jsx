@@ -489,12 +489,15 @@ function App() {
   const startSell = (listing = null) => {
     setFormError("");
     setEditing(listing);
-    setUploadedImages(listing?.images || []);
+    setUploadedImages(listing?.images || []); 
+    setPhotoUrl("");
+
     if (apiReady && !user) {
       showAuth("register");
       notice("Create an account before listing furniture.");
       return;
     }
+
     setModal("sell");
   };
 
@@ -1247,7 +1250,7 @@ function App() {
                 <FiUser /> Log in
               </button>
             )}
-            <button className="sell-btn" onClick={startSell}>
+            <button className="sell-btn" onClick={() => startSell()}>
               <FiPlus /> Sell an item
             </button>
           </nav>
@@ -1281,7 +1284,7 @@ function App() {
               <a href="#browse" className="primary-link">
                 Explore furniture <FiArrowRight />
               </a>
-              <button className="text-link" onClick={startSell}>
+              <button className="text-link" onClick={() => startSell()}>
                 Have something to sell? <span>Start here</span>
               </button>
             </div>
@@ -1506,7 +1509,7 @@ function App() {
               dinners? Give it a new home (and make a little room while you’re
               at it).
             </p>
-            <button className="cream-btn" onClick={startSell}>
+            <button className="cream-btn" onClick={() => startSell()}>
               List a piece for free <FiArrowRight />
             </button>
           </div>
@@ -1632,7 +1635,7 @@ function App() {
             <a href="#how">How it works</a>
             <a href="#about">Our story</a>
             <a href="#faq">FAQs</a>
-            <button onClick={startSell}>Sell with us</button>
+            <button onClick={() => startSell()}>Sell with us</button>
           </div>
           <div className="footer-signoff">
             Made for homes with a past
