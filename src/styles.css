@@ -2585,3 +2585,38 @@ footer {
         grid-template-columns: 1fr;
     }
 }
+
+/* Admin Analytics Product Rows */
+.analytics-product-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 13px 0;
+  border-bottom: 1px solid #eeeeee;
+}
+
+.analytics-product-row:last-child {
+  border-bottom: none;
+}
+
+.analytics-product-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.analytics-product-row strong {
+  font-size: 14px;
+  color: #222222;
+}
+
+.analytics-product-row small {
+  font-size: 12px;
+  color: #777777;
+}
+
+.analytics-card {
+  overflow: hidden;
+}

@@ -2728,6 +2728,74 @@ function App() {
                       </ResponsiveContainer>
                     </div>
                   </div>
+
+                  <div className="analytics-card">
+                    <h3>Top 5 Best-Selling Products</h3>
+                    {(adminData.analytics?.bestSelling || []).map((product) => (
+                      <div className="analytics-product-row" key={product._id}>
+                        <div>
+                          <strong>{product.title}</strong>
+                          <small>
+                            {product.category} · {product.sales} sales
+                          </small>
+                        </div>
+                        <strong>
+                          ₹
+                          {Number(product.revenue || 0).toLocaleString("en-IN")}
+                        </strong>
+                      </div>
+                    ))}
+                    {(!adminData.analytics?.bestSelling ||
+                      adminData.analytics.bestSelling.length === 0) && (
+                      <p className="section-sub">No completed sales yet.</p>
+                    )}
+                  </div>
+                  <div className="analytics-card">
+                    <h3>Order Status Breakdown</h3>
+
+                    {Object.entries(
+                      adminData.analytics?.transactionStatuses || {},
+                    ).map(([status, count]) => (
+                      <div className="analytics-product-row" key={status}>
+                        <strong>{status}</strong>
+                        <strong>{count}</strong>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="analytics-card">
+                    <h3>Recent Orders</h3>
+
+                    {(adminData.analytics?.recentOrders || []).map((order) => (
+                      <div className="analytics-product-row" key={order._id}>
+                        <div>
+                          <strong>{order.listing?.title || "Furniture"}</strong>
+                          <small>
+                            Buyer: {order.buyer?.name || "Unknown"} · Seller:{" "}
+                            {order.seller?.name || "Unknown"}
+                          </small>
+                          <small>
+                            {new Date(order.createdAt).toLocaleDateString(
+                              "en-IN",
+                            )}
+                          </small>
+                        </div>
+                        <div>
+                          <strong>
+                            ₹
+                            {Number(order.agreedPrice || 0).toLocaleString(
+                              "en-IN",
+                            )}
+                          </strong>
+                          <small>{order.status}</small>
+                        </div>
+                      </div>
+                    ))}
+
+                    {(!adminData.analytics?.recentOrders ||
+                      adminData.analytics.recentOrders.length === 0) && (
+                      <p className="section-sub">No orders available yet.</p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="my-listings saved-listings">
